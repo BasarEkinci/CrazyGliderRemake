@@ -5,70 +5,33 @@ namespace _GameFolders.Scripts
 {
     public class PlaneMovementController : MonoBehaviour
     {
-        [SerializeField] private float moveSpeed;
-        [SerializeField] private float gravityMultiplier = 2f;
-        [SerializeField] private Rigidbody rb;
-        private Vector3 _moveInput;
-        private PlaneState _currentPlaneState;
+        [SerializeField] private float moveSpeed = 20f;
+        [SerializeField] private PlaneGravityController planeGravityController;
+        [SerializeField] private SurfaceAligner surfaceAligner;
+        private Vector3 _inputVector;
 
-        private void OnEnable()
+        private void Update()
         {
-            PlaneStateChanger.OnPlaneStateChange += HandlePlaneStateChange;
-        }
-        private void OnDisable()
-        {
-            PlaneStateChanger.OnPlaneStateChange -= HandlePlaneStateChange;
-        }
-
-        private void HandlePlaneStateChange(PlaneState state)
-        {
-            _currentPlaneState = state;
-            switch (state)
-            {
-                case PlaneState.Accelerating:
-                    GetMovementInput(Input.GetAxis("Horizontal"),0);
-                    rb.AddForce(transform.forward * (moveSpeed * _moveInput.magnitude), ForceMode.Force);
-                    break;
-                case PlaneState.Downhill:
-                    rb.AddForce(transform.forward * moveSpeed);
-                    break;
-                case PlaneState.Launching:
-                    rb.AddForce(transform.forward * moveSpeed);
-                    break;
-                case PlaneState.Flying:
-                    GetMovementInput(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                    transform.Rotate(transform.right, Time.deltaTime * moveSpeed * _moveInput.magnitude);
-                    break;
-                case PlaneState.Crashing:
-                    break;
-            }
+            InputVector();
         }
         private void FixedUpdate()
         {
-            switch (_currentPlaneState)
-            {
-                case PlaneState.Accelerating:
-                    GetMovementInput(Input.GetAxis("Horizontal"),0);
-                    rb.AddForce(transform.forward * (moveSpeed * _moveInput.magnitude), ForceMode.Force);
-                    break;
-                case PlaneState.Downhill:
-                    rb.AddForce(transform.forward * moveSpeed);
-                    break;
-                case PlaneState.Launching:
-                    rb.AddForce(transform.forward * moveSpeed);
-                    break;
-                case PlaneState.Flying:
-                    GetMovementInput(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                    transform.Rotate(transform.right, Time.deltaTime * moveSpeed * _moveInput.magnitude);
-                    break;
-                case PlaneState.Crashing:
-                    break;
-            }
+            transform.position += _inputVector * (moveSpeed * Time.fixedDeltaTime);
         }
 
-        private void GetMovementInput(float horizontalInput,float verticalInput)
+        private Vector3 InputVector()
         {
-            _moveInput = new Vector3(horizontalInput, 0,verticalInput);
+            _inputVector = new Vector3(Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
+            return _inputVector;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag("LaunchTrigger"))
+            {
+                planeGravityController.enabled = true;
+                surfaceAligner.enabled = false;
+            }
         }
     }
 }
